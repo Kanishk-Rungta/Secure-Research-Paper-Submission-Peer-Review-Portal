@@ -1,0 +1,2 @@
+# Secure-Research-Paper-Submission-Peer-Review-Portal
+A secure research paper submission and peer-review portal implementing core cybersecurity concepts including single-factor and multi-factor authentication (NIST SP 800-63-2 compliant), access control via an access control matrix, hybrid encryption using RSA and AES, salted password hashing, digital signatures for integrity, and Base64 encoding.
