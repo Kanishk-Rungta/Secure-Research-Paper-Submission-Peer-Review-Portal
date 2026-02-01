@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - Secure Research Portal</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>Dashboard</h1>
+    <nav><a href="/">Home</a> <a id="logout-link" href="#">Logout</a></nav>
+  </header>
+  <main class="container">
+    <section class="card" id="profile"></section>
+    <section class="card" id="dashboard"></section>
+    <section class="card" id="paper-actions" style="margin-top:18px"></section>
+
+    <!-- hidden file inputs for upload actions -->
+    <input id="file-input" type="file" style="display:none" />
+    <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center">
+      <div id="modal-content" style="background:#051428;padding:20px;border-radius:8px;max-width:800px;margin:40px auto;color:#e6eef6"></div>
+    </div>
+  </main>
+  <script src="/dashboard.js"></script>
+</body>
+</html>
