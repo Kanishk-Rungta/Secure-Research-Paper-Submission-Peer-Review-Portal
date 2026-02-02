@@ -1,0 +1,115 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Verify Registration - Research Portal
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/') Home
+          li
+            a(href='/login') Login
+
+    .auth-section
+      .container
+        .auth-card
+          h2
+            i.fas.fa-envelope-open-text
+            |  Verify Email
+
+          .otp-instructions
+            i.fas.fa-envelope
+            p We've sent a 6-digit code to your email
+            p Please enter it below to complete registration
+
+          form#verifyForm
+            .form-group
+              label(for='otp') One-Time Password (OTP)
+              input(type='text', id='otp', name='otp', required, placeholder='000000', maxlength='6')
+              .form-hint Code expires in 5 minutes
+
+            button(type='submit', class='btn btn-primary btn-block')
+              i.fas.fa-check
+              |  Verify OTP
+
+            button(type='button', class='btn btn-secondary btn-block' id='resendBtn')
+              i.fas.fa-redo
+              |  Resend Code
+
+            .form-message#verifyMessage
+
+          .auth-link
+            p Need to change email?
+            a(href='/register') Go back to registration
+
+    script.
+      const verifyForm = document.getElementById('verifyForm');
+      const verifyBtn = verifyForm.querySelector('button');
+      const resendBtn = document.getElementById('resendBtn');
+
+      verifyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('verifyMessage');
+        messageEl.innerHTML = '';
+        messageEl.className = '';
+
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+        try {
+          const response = await fetch('/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ otp: document.getElementById('otp').value }),
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = '<i class="fas fa-check-circle"></i> Verification successful! Redirecting...';
+            setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Verification failed'}`;
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+        } finally {
+          verifyBtn.disabled = false;
+          verifyBtn.innerHTML = '<i class="fas fa-check"></i> Verify OTP';
+        }
+      });
+
+      resendBtn.addEventListener('click', async () => {
+        const messageEl = document.getElementById('verifyMessage');
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        try {
+          const response = await fetch('/api/auth/resend-otp', { method: 'POST', credentials: 'include' });
+          if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = '<i class="fas fa-check-circle"></i> OTP resent to your email';
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to resend OTP';
+          }
+        } catch (err) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${err.message}`;
+        } finally {
+          resendBtn.disabled = false;
+          resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+        }
+      });

@@ -1,0 +1,229 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Login - Research Paper Portal
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/') Home
+          li
+            a(href='/register') Register
+
+    .auth-section
+      .container
+        .auth-card
+          h2
+            i.fas.fa-sign-in-alt
+            |  Sign In
+
+          form#loginForm.auth-form
+            .form-group
+              label(for='username') Username or Email
+              input(type='text', id='username', name='username', required, placeholder='Enter username or email')
+            
+            .form-group
+              label(for='password') Password
+              input(type='password', id='password', name='password', required, placeholder='Enter your password')
+            
+            button(type='submit', class='btn btn-primary btn-block')
+              i.fas.fa-sign-in-alt
+              |  Sign In
+            
+            .form-message#loginMessage
+
+          form#otpForm.auth-form(style='display: none;')
+            .otp-instructions
+              i.fas.fa-envelope
+              p We've sent a 6-digit code to your email
+              p Please enter it below to verify your identity
+            
+            .form-group
+              label(for='otp') One-Time Password (OTP)
+              input(type='text', id='otp', name='otp', required, placeholder='000000', maxlength='6')
+              .form-hint Code expires in 5 minutes
+            
+            button(type='submit', class='btn btn-primary btn-block')
+              i.fas.fa-check
+              |  Verify OTP
+            
+            button(type='button', class='btn btn-secondary btn-block' id='resendBtn')
+              i.fas.fa-redo
+              |  Resend Code
+            
+            button(type='button', class='btn btn-text' id='backBtn') Back to Login
+            
+            .form-message#otpMessage
+
+          .auth-link
+            p Don't have an account?
+            a(href='/register') Register here
+
+    script.
+      // Simple direct pattern (like register.pug) - no defensive checks
+      const loginForm = document.getElementById('loginForm');
+      const otpForm = document.getElementById('otpForm');
+      let userEmail = '';
+      let resendCountdown = 0;
+      
+      // Login step
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('loginMessage');
+        messageEl.innerHTML = '';
+        messageEl.className = '';
+        
+        // Client-side validation
+        const usernameVal = (document.getElementById('username').value || '').trim();
+        const passwordVal = (document.getElementById('password').value || '').trim();
+        if (!usernameVal || !passwordVal) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Username and password are required.';
+          return;
+        }
+        
+        const loginBtn = loginForm.querySelector('button');
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+        
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: usernameVal,
+              password: passwordVal
+            }),
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            userEmail = data.email;
+            messageEl.className = 'success';
+            messageEl.innerHTML = '<i class="fas fa-check-circle"></i> Credentials verified. Check your email for OTP.';
+            
+            setTimeout(() => {
+              loginForm.style.display = 'none';
+              otpForm.style.display = 'block';
+              document.getElementById('otp').focus();
+            }, 1000);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Login failed'}`;
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+        } finally {
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+        }
+      });
+      
+      // OTP verification step
+      otpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('otpMessage');
+        messageEl.innerHTML = '';
+        messageEl.className = '';
+        
+        const otpBtn = otpForm.querySelector('button');
+        otpBtn.disabled = true;
+        otpBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        
+        try {
+          const response = await fetch('/api/auth/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              otp: document.getElementById('otp').value
+            }),
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = '<i class="fas fa-check-circle"></i> Login successful! Redirecting...';
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1500);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'OTP verification failed'}`;
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+        } finally {
+          otpBtn.disabled = false;
+          otpBtn.innerHTML = '<i class="fas fa-check"></i> Verify OTP';
+        }
+      });
+      
+      // Resend OTP
+      document.getElementById('resendBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('otpMessage');
+        
+        if (resendCountdown > 0) {
+          messageEl.className = 'info';
+          messageEl.innerHTML = `<i class="fas fa-clock"></i> Wait ${resendCountdown} seconds before retrying`;
+          return;
+        }
+        
+        const resendBtn = document.getElementById('resendBtn');
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        try {
+          const response = await fetch('/api/auth/resend-otp', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = '<i class="fas fa-check-circle"></i> OTP resent to your email';
+            resendCountdown = 60;
+            const countdown = setInterval(() => {
+              resendCountdown--;
+              resendBtn.innerHTML = `<i class="fas fa-redo"></i> Resend in ${resendCountdown}s`;
+              if (resendCountdown <= 0) {
+                clearInterval(countdown);
+                resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                resendBtn.disabled = false;
+              }
+            }, 1000);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to resend OTP';
+            resendBtn.disabled = false;
+            resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+          resendBtn.disabled = false;
+          resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+        }
+      });
+      
+      // Back to login
+      document.getElementById('backBtn').addEventListener('click', () => {
+        loginForm.style.display = 'block';
+        otpForm.style.display = 'none';
+        document.getElementById('username').focus();
+      });

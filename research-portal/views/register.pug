@@ -1,0 +1,124 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Register - Research Paper Portal
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/') Home
+          li
+            a(href='/login') Login
+
+    .auth-section
+      .container
+        .auth-card
+          h2
+            i.fas.fa-user-plus
+            |  Create Account
+          
+          form#registerForm
+            .form-group
+              label(for='fullName') Full Name
+              input(type='text', id='fullName', name='fullName', required, placeholder='Enter your full name')
+            
+            .form-group
+              label(for='username') Username
+              input(type='text', id='username', name='username', required, placeholder='Choose a username (3+ characters)')
+              .form-hint Alphanumeric, underscores, and hyphens only
+            
+            .form-group
+              label(for='email') Email Address
+              input(type='email', id='email', name='email', required, placeholder='your@email.com')
+            
+            .form-group
+              label(for='institution') Institution (Optional)
+              input(type='text', id='institution', name='institution', placeholder='Your university or organization')
+            
+            .form-group
+              label(for='role') Role
+              select(id='role', name='role', required)
+                option(value='') -- Select Role --
+                option(value='Author') Author (Submit papers)
+                option(value='Reviewer') Reviewer (Review papers)
+                option(value='Editor') Editor (Manage submissions)
+            
+            .form-group
+              label(for='password') Password
+              input(type='password', id='password', name='password', required, placeholder='At least 12 characters')
+              .form-hint Password must contain at least 12 characters
+            
+            .form-group
+              label(for='confirmPassword') Confirm Password
+              input(type='password', id='confirmPassword', name='confirmPassword', required, placeholder='Confirm your password')
+            
+            .form-group
+              input(type='checkbox', id='agreeTerms', name='agreeTerms', required)
+              label(for='agreeTerms', class='checkbox-label')
+                | I agree to the Terms of Service and Privacy Policy
+            
+            button(type='submit', class='btn btn-primary btn-block')
+              i.fas.fa-check
+              |  Create Account
+            
+            .form-message#formMessage
+          
+          .auth-link
+            p Already have an account?
+            a(href='/login') Sign in here
+
+    script.
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('formMessage');
+        messageEl.innerHTML = '';
+        messageEl.className = '';
+        
+        const formData = {
+          fullName: document.getElementById('fullName').value,
+          username: document.getElementById('username').value,
+          email: document.getElementById('email').value,
+          institution: document.getElementById('institution').value,
+          role: document.getElementById('role').value,
+          password: document.getElementById('password').value,
+          confirmPassword: document.getElementById('confirmPassword').value
+        };
+        
+        try {
+          const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+            if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = `
+              <i class="fas fa-check-circle"></i>
+              Registration successful! An OTP has been sent to ${formData.email}.
+              Redirecting to verification...
+            `;
+            setTimeout(() => {
+              window.location.href = '/register/verify';
+            }, 1500);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Registration failed'}`;
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+        }
+      });

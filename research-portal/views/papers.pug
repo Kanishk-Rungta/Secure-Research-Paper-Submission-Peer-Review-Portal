@@ -1,0 +1,284 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Papers - Research Paper Portal
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/papers') Papers
+          li
+            a(href='/dashboard') Dashboard
+          li.user-menu
+            .user-info
+              span.username#userName -
+              span.role#userRole -
+            a(href='#logout', class='btn btn-danger') Logout
+
+    .papers-section
+      .container
+        .dashboard-header
+          h1 Papers
+          .filter-group
+            select#filterStatus
+              option(value='') All Statuses
+              option(value='SUBMITTED') Submitted
+              option(value='UNDER_REVIEW') Under Review
+              option(value='ACCEPTED') Accepted
+              option(value='REJECTED') Rejected
+              option(value='REVISION_REQUESTED') Revision Requested
+
+        .form-message#message
+
+        .table-container
+          table
+            thead
+              tr
+                th Title
+                th Author
+                th Status
+                th Submitted
+                th Actions
+            tbody#papersList
+              tr
+                td(colspan='5', style='text-align: center; padding: 2rem;')
+                  i.fas.fa-spinner.fa-spin
+                  |  Loading papers...
+
+    script.
+      let allPapers = [];
+      
+      // Load current user
+      async function loadUser() {
+        try {
+          const response = await fetch('/api/auth/me', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById('userName').textContent = data.user.fullName;
+            document.getElementById('userRole').textContent = data.user.role;
+            return data.user;
+          } else {
+            window.location.href = '/login';
+          }
+        } catch (error) {
+          window.location.href = '/login';
+        }
+      }
+      
+      // Load papers
+      async function loadPapers() {
+        try {
+          const response = await fetch('/api/papers', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            allPapers = data.papers || [];
+            renderPapers(allPapers);
+          } else {
+            document.getElementById('message').className = 'error';
+            document.getElementById('message').innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to load papers';
+          }
+        } catch (error) {
+          console.error('Error loading papers:', error);
+        }
+      }
+      
+      function renderPapers(papers) {
+        const tbody = document.getElementById('papersList');
+        
+        if (papers.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-inbox"></i> No papers found
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        tbody.innerHTML = papers.map(paper => `
+          <tr>
+            <td>
+              <strong>${paper.title}</strong>
+              <br>
+              <small style="color: #64748b;">${paper.abstractText.substring(0, 100)}...</small>
+            </td>
+            <td>${paper.authorId?.fullName || 'Unknown'}</td>
+            <td>
+              <span class="status-badge status-${paper.status.toLowerCase().replace('_', '-')}">
+                ${paper.status}
+              </span>
+            </td>
+            <td>${new Date(paper.submittedAt).toLocaleDateString()}</td>
+            <td>
+              <a href="#view-paper-${paper._id}" class="btn btn-primary" data-paper-id="${paper._id}">
+                View
+              </a>
+            </td>
+          </tr>
+        `).join('');
+        
+        // Add click handlers
+        document.querySelectorAll('a[href^="#view-paper-"]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const paperId = btn.dataset.paperId;
+            viewPaper(paperId);
+          });
+        });
+      }
+      
+      async function viewPaper(paperId) {
+        try {
+          const response = await fetch(\`/api/papers/\${paperId}\`, { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            showPaperModal(data.paper);
+          } else {
+            alert('Failed to load paper');
+          }
+        } catch (error) {
+          console.error('Error loading paper:', error);
+        }
+      }
+      
+      function showPaperModal(paper) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = \`
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>\${paper.title}</h2>
+              <button class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <h4>Abstract</h4>
+              <p>\${paper.abstractText}</p>
+              
+              <h4>Status</h4>
+              <p><span class="status-badge status-\${paper.status.toLowerCase().replace('_', '-')}">\${paper.status}</span></p>
+              
+              <h4>Metadata</h4>
+              <ul>
+                <li><strong>Author:</strong> \${paper.authorId?.fullName || 'Unknown'}</li>
+                <li><strong>Submitted:</strong> \${new Date(paper.submittedAt).toLocaleDateString()}</li>
+                <li><strong>File:</strong> \${paper.fileName}</li>
+              </ul>
+              
+              <div class="button-group">
+                <a href="/api/papers/\${paper._id}/download" class="btn btn-primary">
+                  <i class="fas fa-download"></i> Download PDF
+                </a>
+                <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        \`;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.remove();
+          }
+        });
+        
+        modal.querySelector('.btn-close').addEventListener('click', () => {
+          modal.remove();
+        });
+      }
+      
+      // Filter by status
+      document.getElementById('filterStatus').addEventListener('change', (e) => {
+        const status = e.target.value;
+        if (status) {
+          const filtered = allPapers.filter(p => p.status === status);
+          renderPapers(filtered);
+        } else {
+          renderPapers(allPapers);
+        }
+      });
+      
+      // Logout
+      document.querySelector('a[href="#logout"]').addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          window.location.href = '/login';
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      });
+      
+      // Initialize
+      loadUser().then(() => loadPapers());
+    
+    style.
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        width: 90%;
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .modal-header h2 {
+        margin: 0;
+      }
+      
+      .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #64748b;
+      }
+      
+      .modal-body {
+        padding: 1.5rem;
+      }
+      
+      .filter-group {
+        margin-top: 1rem;
+      }
+      
+      .filter-group select {
+        max-width: 250px;
+      }

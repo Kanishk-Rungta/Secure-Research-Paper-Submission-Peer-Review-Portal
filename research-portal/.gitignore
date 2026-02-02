@@ -1,0 +1,17 @@
+.DS_Store
+node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+dist/
+build/
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+keys/private.pem
+keys/private-*.pem
+uploads/

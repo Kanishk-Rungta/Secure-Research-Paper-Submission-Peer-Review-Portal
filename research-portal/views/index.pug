@@ -1,0 +1,106 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Research Paper Portal - Secure Submission & Review
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/login') Login
+          li
+            a(href='/register', class='btn-primary') Register
+
+    .hero-section
+      .container
+        .hero-content
+          h1 Research Paper Submission & Peer-Review Portal
+          p Secure, encrypted, and NIST-compliant research paper management system
+          
+          .features-grid
+            .feature-card
+              .feature-icon
+                i.fas.fa-lock
+              h3 Military-Grade Encryption
+              p AES-256-CBC with RSA-2048 hybrid encryption for all uploaded files
+            
+            .feature-card
+              .feature-icon
+                i.fas.fa-shield-alt
+              h3 Multi-Factor Authentication
+              p Email OTP-based MFA with 5-minute expiry for enhanced security
+            
+            .feature-card
+              .feature-icon
+                i.fas.fa-fingerprint
+              h3 Digital Signatures
+              p RSA-PSS signatures for non-repudiation of editorial decisions
+            
+            .feature-card
+              .feature-icon
+                i.fas.fa-users
+              h3 Role-Based Access Control
+              p Author, Reviewer, and Editor roles with strict ACL enforcement
+            
+            .feature-card
+              .feature-icon
+                i.fas.fa-check-circle
+              h3 Audit Logging
+              p Comprehensive logging of all security-relevant events
+            
+            .feature-card
+              .feature-icon
+                i.fas.fa-database
+              h3 MongoDB Atlas
+              p Cloud database with encryption at rest and automatic backups
+
+    .security-section
+      .container
+        h2 Security Architecture
+        
+        .security-features
+          .security-item
+            h4 Authentication
+            ul
+              li Bcrypt with per-user salt (cost factor 12)
+              li Email OTP for MFA (5-minute expiry)
+              li Session management with 1-hour timeout
+              li NIST SP 800-63-2 compliant
+          
+          .security-item
+            h4 Encryption
+            ul
+              li AES-256-CBC for file encryption
+              li RSA-2048 for key exchange
+              li SHA-256 for integrity verification
+              li Base64 encoding for safe storage
+          
+          .security-item
+            h4 Access Control
+            ul
+              li Three roles: Author, Reviewer, Editor
+              li Role-based access control matrix
+              li Mandatory ACL enforcement per route
+              li Audit logging of all access denials
+
+    .cta-section
+      .container
+        h2 Get Started Today
+        p Join the secure research community
+        
+        .button-group
+          a(href='/register', class='btn btn-primary btn-large') Create Account
+          a(href='/login', class='btn btn-secondary btn-large') Sign In
+
+    footer
+      .container
+        p &copy; 2024 Research Paper Portal. All rights reserved.
+        p Built with security and academic integrity in mind.
