@@ -51,8 +51,8 @@ html(lang='en')
             tbody#papersList
               tr
                 td(colspan='5', style='text-align: center; padding: 2rem;')
-                  i.fas.fa-spinner.fa-spin
-                  |  Loading papers...
+                  p No papers yet. Waiting to load...
+
 
     script.
       let allPapers = [];
@@ -77,24 +77,72 @@ html(lang='en')
       // Load papers
       async function loadPapers() {
         try {
-          const response = await fetch('/api/papers', { credentials: 'include' });
+          console.log('Papers: loadPapers starting');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch('/api/papers', { 
+            credentials: 'include',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          console.log('Papers: API response:', response.status);
+          
+          if (response.status === 401 || response.status === 403) {
+            console.log('Papers: Unauthorized, redirecting to login');
+            window.location.href = '/login';
+            return;
+          }
+
           if (response.ok) {
             const data = await response.json();
             allPapers = data.papers || [];
+            console.log('Papers: Loaded papers:', allPapers.length);
             renderPapers(allPapers);
           } else {
-            document.getElementById('message').className = 'error';
-            document.getElementById('message').innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to load papers';
+            console.error('Papers: API error:', response.status);
+            const tbody = document.getElementById('papersList');
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <i class="fas fa-exclamation-circle"></i> Failed to load papers (HTTP ${response.status})
+                </td>
+              </tr>
+            `;
           }
         } catch (error) {
-          console.error('Error loading papers:', error);
+          console.error('Papers: Error loading papers:', error);
+          const tbody = document.getElementById('papersList');
+          
+          if (error.name === 'AbortError') {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <i class="fas fa-exclamation-circle"></i> Request timeout - server may be down
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <i class="fas fa-exclamation-circle"></i> Error: ${error.message}
+                </td>
+              </tr>
+            `;
+          }
         }
       }
       
       function renderPapers(papers) {
         const tbody = document.getElementById('papersList');
         
-        if (papers.length === 0) {
+        console.log('[renderPapers] Input papers:', papers);
+        console.log('[renderPapers] Length:', papers ? papers.length : 'null');
+        
+        if (!papers || papers.length === 0) {
+          console.log('[renderPapers] No papers to display');
           tbody.innerHTML = `
             <tr>
               <td colspan="5" style="text-align: center; padding: 2rem;">
@@ -105,27 +153,33 @@ html(lang='en')
           return;
         }
         
-        tbody.innerHTML = papers.map(paper => `
-          <tr>
-            <td>
-              <strong>${paper.title}</strong>
-              <br>
-              <small style="color: #64748b;">${paper.abstractText.substring(0, 100)}...</small>
-            </td>
-            <td>${paper.authorId?.fullName || 'Unknown'}</td>
-            <td>
-              <span class="status-badge status-${paper.status.toLowerCase().replace('_', '-')}">
-                ${paper.status}
-              </span>
-            </td>
-            <td>${new Date(paper.submittedAt).toLocaleDateString()}</td>
-            <td>
-              <a href="#view-paper-${paper._id}" class="btn btn-primary" data-paper-id="${paper._id}">
-                View
-              </a>
-            </td>
-          </tr>
-        `).join('');
+        console.log('[renderPapers] Rendering', papers.length, 'papers');
+        tbody.innerHTML = papers.map(paper => {
+          console.log('[renderPapers] Paper:', paper);
+          return `
+            <tr>
+              <td>
+                <strong>${paper.title || 'Untitled'}</strong>
+                <br>
+                <small style="color: #64748b;">${(paper.abstractText || '').substring(0, 100)}...</small>
+              </td>
+              <td>${paper.authorId && paper.authorId.fullName ? paper.authorId.fullName : 'Unknown'}</td>
+              <td>
+                <span class="status-badge status-${paper.status.toLowerCase().replace('_', '-')}">
+                  ${paper.status}
+                </span>
+              </td>
+              <td>${new Date(paper.submittedAt).toLocaleDateString()}</td>
+              <td>
+                <a href="#view-paper-${paper._id}" class="btn btn-primary" data-paper-id="${paper._id}">
+                  View
+                </a>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        
+        console.log('[renderPapers] HTML generated');
         
         // Add click handlers
         document.querySelectorAll('a[href^="#view-paper-"]').forEach(btn => {
@@ -135,6 +189,8 @@ html(lang='en')
             viewPaper(paperId);
           });
         });
+        
+        console.log('[renderPapers] Done');
       }
       
       async function viewPaper(paperId) {

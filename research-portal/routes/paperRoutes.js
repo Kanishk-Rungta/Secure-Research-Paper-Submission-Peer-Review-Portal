@@ -182,20 +182,20 @@ router.get('/list-all', aclMiddleware.requireEditor, decisionController.listDeci
  * Grant editor access to a paper
  * Only the paper author can grant editor access
  */
-router.post('/:paperId/add-editor', aclMiddleware.isAuthenticated, paperController.grantEditorAccess);
+router.post('/:paperId/add-editor', authMiddleware.isAuthenticated, paperController.grantEditorAccess);
 
 /**
  * GET /papers/:paperId/editors
  * Get list of editors with access to a paper
  * Only the paper author can view editors
  */
-router.get('/:paperId/editors', aclMiddleware.isAuthenticated, paperController.getPaperEditors);
+router.get('/:paperId/editors', authMiddleware.isAuthenticated, paperController.getPaperEditors);
 
 /**
  * DELETE /papers/:paperId/revoke-editor
  * Revoke editor access from a paper
  * Only the paper author can revoke editor access
  */
-router.delete('/:paperId/revoke-editor', aclMiddleware.isAuthenticated, paperController.revokeEditorAccess);
+router.delete('/:paperId/revoke-editor', authMiddleware.isAuthenticated, paperController.revokeEditorAccess);
 
 module.exports = router;

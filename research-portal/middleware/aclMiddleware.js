@@ -48,9 +48,23 @@ exports.canAccessPaper = async (req, res, next) => {
     let hasAccess = false;
 
     if (user.role === 'Editor') {
-      // Editors can read/write all papers
-      hasAccess = true;
-      req.accessLevel = 'full'; // Can read, write, manage
+      // Editors do NOT automatically have access to all papers.
+      // They can access papers where they were granted editor access (PaperAccess)
+      const editorAccess = await PaperAccess.findOne({
+        paperId: paperId,
+        userId: userId,
+        accessLevel: 'editor',
+        status: 'ACTIVE',
+      });
+
+      if (editorAccess) {
+        hasAccess = true;
+        req.accessLevel = 'editor'; // Granted editor access
+      } else if (paper.assignedReviewers && paper.assignedReviewers.includes(userId)) {
+        // If editor is also an assigned reviewer, allow read access
+        hasAccess = true;
+        req.accessLevel = 'read';
+      }
     } else if (user.role === 'Author') {
       // Authors can only read/write their own papers
       if (paper.authorId.toString() === userId.toString()) {
@@ -70,11 +84,9 @@ exports.canAccessPaper = async (req, res, next) => {
         }
       }
     } else if (user.role === 'Reviewer') {
-      // Reviewers can only read papers assigned to them
-      if (paper.assignedReviewers.includes(userId)) {
-        hasAccess = true;
-        req.accessLevel = 'read'; // Can only read
-      }
+      // Reviewers can see all papers per updated requirement
+      hasAccess = true;
+      req.accessLevel = 'read'; // Can read all
     }
 
     if (!hasAccess) {

@@ -206,27 +206,36 @@ exports.downloadPaper = async (req, res) => {
  */
 exports.listPapers = async (req, res) => {
   try {
+    console.log('[listPapers] Starting...');
     const userId = req.session.userId;
     const user = req.user;
+    
+    // Safety check: ensure user is loaded
+    if (!user || !userId) {
+      console.error('[listPapers] User not loaded: user=', !!user, 'userId=', !!userId);
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    if (!user.role) {
+      console.error('[listPapers] User has no role:', user);
+      return res.status(400).json({ error: 'Invalid user data' });
+    }
+    
+    console.log('[listPapers] User role:', user.role);
     let query = {};
 
     if (user.role === 'Author') {
       // Authors see their own papers
       query = { authorId: userId };
+      console.log('[listPapers] Author query');
     } else if (user.role === 'Reviewer') {
-      // Reviewers see only papers assigned to them
-      query = { assignedReviewers: userId };
-    }
-    // Editors see all papers (empty query)
-
-    const papers = await Paper.find(query)
-      .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
-      .populate('authorId', 'fullName email')
-      .populate('assignedReviewers', 'fullName email')
-      .sort({ submittedAt: -1 });
-
-    // For Authors, also get papers they have editor access to
-    if (user.role === 'Author') {
+      // Reviewers should be able to see all papers per updated requirement
+      query = {}; // all papers
+      console.log('[listPapers] Reviewer query - all papers');
+    } else if (user.role === 'Editor') {
+      // Editors should NOT see all papers automatically.
+      // Editors only see papers they have been granted editor access to (PaperAccess)
+      console.log('[listPapers] Editor - fetching editor access records...');
       const accessRecords = await PaperAccess.find({
         userId: userId,
         accessLevel: 'editor',
@@ -234,14 +243,44 @@ exports.listPapers = async (req, res) => {
       }).select('paperId');
 
       const accessPaperIds = accessRecords.map(a => a.paperId.toString());
+      console.log('[listPapers] Editor has access to', accessPaperIds.length, 'papers');
       
+      if (accessPaperIds.length > 0) {
+        query = { _id: { $in: accessPaperIds } };
+      } else {
+        // No access records - return empty set
+        query = { _id: { $in: [] } };
+      }
+    }
+
+    console.log('[listPapers] Fetching papers with query...');
+    let papers = await Paper.find(query)
+      .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
+      .populate('authorId', 'fullName email institution')
+      .populate('assignedReviewers', 'fullName email')
+      .sort({ submittedAt: -1 });
+    
+    console.log('[listPapers] Found', papers.length, 'papers');
+
+    // For Authors, also get papers they have editor access to (so they can collaborate)
+    if (user.role === 'Author') {
+      console.log('[listPapers] Author - fetching editor access papers...');
+      const accessRecords = await PaperAccess.find({
+        userId: userId,
+        accessLevel: 'editor',
+        status: 'ACTIVE',
+      }).select('paperId');
+
+      const accessPaperIds = accessRecords.map(a => a.paperId.toString());
+      console.log('[listPapers] Author has editor access to', accessPaperIds.length, 'papers');
+
       if (accessPaperIds.length > 0) {
         const accessPapers = await Paper.find({
           _id: { $in: accessPaperIds },
           authorId: { $ne: userId }, // Don't duplicate own papers
         })
           .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
-          .populate('authorId', 'fullName email')
+          .populate('authorId', 'fullName email institution')
           .populate('assignedReviewers', 'fullName email')
           .sort({ submittedAt: -1 });
 
@@ -249,13 +288,14 @@ exports.listPapers = async (req, res) => {
       }
     }
 
+    console.log('[listPapers] Returning', papers.length, 'papers');
     res.status(200).json({
       papers: papers,
       count: papers.length,
     });
   } catch (error) {
-    console.error('List papers error:', error);
-    res.status(500).json({ error: 'Failed to list papers' });
+    console.error('[listPapers] Error:', error);
+    res.status(500).json({ error: 'Failed to list papers: ' + error.message });
   }
 };
 

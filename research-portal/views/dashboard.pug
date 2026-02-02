@@ -606,17 +606,44 @@ html(lang='en')
       // Load papers and stats based on role
       async function loadDashboard() {
         try {
-          const response = await fetch('/api/papers', { credentials: 'include' });
+          console.log('Dashboard: loadDashboard starting');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch('/api/papers', { 
+            credentials: 'include',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          console.log('Dashboard: API response:', response.status);
+          
+          if (response.status === 401) {
+            console.log('Dashboard: Session expired, redirecting to login');
+            window.location.href = '/login';
+            return;
+          }
+          
           if (response.ok) {
             const data = await response.json();
             allPapers = data.papers || [];
+            console.log('Dashboard: Loaded papers:', allPapers.length);
             updateDashboard(allPapers);
           } else {
-            showMessage('Failed to load papers', 'error');
+            console.error('Dashboard: API returned status:', response.status);
+            const errorMsg = `Failed to load papers (${response.status})`;
+            showMessage(errorMsg, 'error');
+            updateDashboard([]); // Show empty dashboard
           }
         } catch (error) {
-          console.error('Error loading papers:', error);
-          showMessage('Error loading dashboard data', 'error');
+          if (error.name === 'AbortError') {
+            console.error('Dashboard: Request timeout');
+            showMessage('Request timeout - please try again', 'error');
+          } else {
+            console.error('Dashboard: Error loading papers:', error);
+            showMessage('Error loading papers: ' + error.message, 'error');
+          }
+          updateDashboard([]); // Show empty dashboard on error
         }
       }
 
@@ -642,8 +669,8 @@ html(lang='en')
       function showAuthorDashboard(papers) {
         document.getElementById('authorSection').style.display = 'block';
 
-        // Count author's papers
-        const authorPapers = papers.filter(p => p.authorId._id === currentUser._id);
+        // Count author's papers (safe string comparison)
+        const authorPapers = papers.filter(p => String((p.authorId && (p.authorId._id || p.authorId))) === String(currentUser._id));
         document.getElementById('authorPaperCount').textContent = authorPapers.length;
 
         // Count total collaborators across all papers
@@ -656,13 +683,13 @@ html(lang='en')
         document.getElementById('collaboratorCount').textContent = totalEditors;
       }
 
-      // Reviewer Dashboard
+        // Reviewer Dashboard
       function showReviewerDashboard(papers) {
         document.getElementById('reviewerSection').style.display = 'block';
 
-        // Count assigned papers
+        // Reviewers can see all papers (per updated requirement) but we count those assigned to them
         const assignedPapers = papers.filter(p => 
-          p.assignedReviewers && p.assignedReviewers.some(r => r._id === currentUser._id)
+          p.assignedReviewers && p.assignedReviewers.some(r => String((r._id || r)) === String(currentUser._id))
         );
         document.getElementById('reviewCount').textContent = assignedPapers.length;
 
@@ -772,7 +799,7 @@ html(lang='en')
 
       // Show collaborators list
       async function showCollaboratorsList() {
-        const authorPapers = allPapers.filter(p => p.authorId._id === currentUser._id);
+        const authorPapers = allPapers.filter(p => String((p.authorId && (p.authorId._id || p.authorId))) === String(currentUser._id));
         
         if (authorPapers.length === 0) {
           document.getElementById('collaboratorsList').innerHTML = '<div class="no-data">No papers yet</div>';
