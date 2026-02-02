@@ -1,6 +1,7 @@
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
 const Decision = require('../models/Decision');
+const PaperAccess = require('../models/PaperAccess');
 const cryptoService = require('../services/cryptoService');
 const auditService = require('../services/auditService');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -81,6 +82,17 @@ exports.submitPaper = async (req, res) => {
     });
 
     await newPaper.save();
+
+    // Create PaperAccess entry for the author (owner)
+    const paperAccess = new PaperAccess({
+      paperId: newPaper._id,
+      userId: userId,
+      accessLevel: 'owner',
+      status: 'ACTIVE',
+      grantedBy: userId,
+      grantReason: 'Author - paper owner',
+    });
+    await paperAccess.save();
 
     // Log file upload
     await auditService.logFileUpload(userId, newPaper._id, req.file.originalname, req.file.size, clientIP);
@@ -189,7 +201,8 @@ exports.downloadPaper = async (req, res) => {
 
 /**
  * List papers accessible to current user
- * ACL enforced: Authors see only their papers, Reviewers see assigned, Editors see all
+ * ACL enforced: Authors see only their papers and papers they have access to,
+ * Reviewers see assigned papers, Editors see all
  */
 exports.listPapers = async (req, res) => {
   try {
@@ -198,7 +211,7 @@ exports.listPapers = async (req, res) => {
     let query = {};
 
     if (user.role === 'Author') {
-      // Authors see only their own papers
+      // Authors see their own papers
       query = { authorId: userId };
     } else if (user.role === 'Reviewer') {
       // Reviewers see only papers assigned to them
@@ -209,7 +222,32 @@ exports.listPapers = async (req, res) => {
     const papers = await Paper.find(query)
       .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
       .populate('authorId', 'fullName email')
+      .populate('assignedReviewers', 'fullName email')
       .sort({ submittedAt: -1 });
+
+    // For Authors, also get papers they have editor access to
+    if (user.role === 'Author') {
+      const accessRecords = await PaperAccess.find({
+        userId: userId,
+        accessLevel: 'editor',
+        status: 'ACTIVE',
+      }).select('paperId');
+
+      const accessPaperIds = accessRecords.map(a => a.paperId.toString());
+      
+      if (accessPaperIds.length > 0) {
+        const accessPapers = await Paper.find({
+          _id: { $in: accessPaperIds },
+          authorId: { $ne: userId }, // Don't duplicate own papers
+        })
+          .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
+          .populate('authorId', 'fullName email')
+          .populate('assignedReviewers', 'fullName email')
+          .sort({ submittedAt: -1 });
+
+        papers.push(...accessPapers);
+      }
+    }
 
     res.status(200).json({
       papers: papers,
@@ -242,6 +280,30 @@ exports.updatePaperStatus = async (req, res) => {
 
     if (!paper) {
       return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    // Create PaperAccess records for newly assigned reviewers
+    if (assignedReviewers && assignedReviewers.length > 0) {
+      for (const reviewerId of assignedReviewers) {
+        // Check if access already exists
+        const existingAccess = await PaperAccess.findOne({
+          paperId: paperId,
+          userId: reviewerId,
+        });
+
+        if (!existingAccess) {
+          // Create new access record for reviewer
+          const reviewerAccess = new PaperAccess({
+            paperId: paperId,
+            userId: reviewerId,
+            accessLevel: 'reviewer',
+            status: 'ACTIVE',
+            grantedBy: req.session.userId,
+            grantReason: 'Assigned as reviewer',
+          });
+          await reviewerAccess.save();
+        }
+      }
     }
 
     await auditService.log(
@@ -288,5 +350,220 @@ exports.getPaperWithReviews = async (req, res) => {
   } catch (error) {
     console.error('Get paper with reviews error:', error);
     res.status(500).json({ error: 'Failed to get paper details' });
+  }
+};
+
+/**
+ * Grant editor access to a paper (Author only - for their own papers)
+ * Allows authors to add editors who can contribute to the paper
+ */
+exports.grantEditorAccess = async (req, res) => {
+  try {
+    const PaperAccess = require('../models/PaperAccess');
+    const User = require('../models/User');
+    const paperId = req.params.paperId;
+    const { editorEmail } = req.body;
+    const userId = req.session.userId;
+    const clientIP = authMiddleware.getClientIP(req);
+
+    // Validate input
+    if (!editorEmail || !editorEmail.trim()) {
+      return res.status(400).json({ error: 'Editor email is required' });
+    }
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    // Verify the requester is the paper owner (Author)
+    if (paper.authorId.toString() !== userId.toString()) {
+      await auditService.logAccessDenied(
+        userId,
+        'GRANT_EDITOR_ACCESS',
+        paperId,
+        clientIP,
+        'User is not the paper owner'
+      );
+      return res.status(403).json({ error: 'Only the paper author can grant editor access' });
+    }
+
+    // Find the editor user
+    const editor = await User.findOne({ email: editorEmail.toLowerCase() });
+    if (!editor) {
+      return res.status(404).json({ error: 'Editor not found' });
+    }
+
+    // Prevent self-granting
+    if (editor._id.toString() === userId.toString()) {
+      return res.status(400).json({ error: 'You cannot grant access to yourself' });
+    }
+
+    // Check if access already exists
+    const existingAccess = await PaperAccess.findOne({
+      paperId: paperId,
+      userId: editor._id,
+    });
+
+    if (existingAccess && existingAccess.status === 'ACTIVE') {
+      return res.status(409).json({ error: 'This editor already has access to this paper' });
+    }
+
+    // Create or reactivate access record
+    let paperAccess;
+    if (existingAccess) {
+      // Reactivate revoked access
+      paperAccess = await PaperAccess.findByIdAndUpdate(
+        existingAccess._id,
+        {
+          accessLevel: 'editor',
+          status: 'ACTIVE',
+          grantedBy: userId,
+          grantReason: 'Editor access granted',
+          grantedAt: new Date(),
+          revokedAt: null,
+          revokedBy: null,
+          revocationReason: '',
+        },
+        { new: true }
+      );
+    } else {
+      // Create new access record
+      paperAccess = new PaperAccess({
+        paperId: paperId,
+        userId: editor._id,
+        accessLevel: 'editor',
+        status: 'ACTIVE',
+        grantedBy: userId,
+        grantReason: 'Editor access granted',
+      });
+      await paperAccess.save();
+    }
+
+    // Log the action
+    await auditService.log(
+      userId,
+      'GRANT_EDITOR_ACCESS',
+      paperId,
+      'SUCCESS',
+      `Editor access granted to ${editorEmail}`,
+      clientIP
+    );
+
+    res.status(201).json({
+      message: 'Editor access granted successfully',
+      access: paperAccess,
+    });
+  } catch (error) {
+    console.error('Grant editor access error:', error);
+    res.status(500).json({ error: 'Failed to grant editor access' });
+  }
+};
+
+/**
+ * Get editors with access to a paper (Author only - for their own papers)
+ */
+exports.getPaperEditors = async (req, res) => {
+  try {
+    const PaperAccess = require('../models/PaperAccess');
+    const paperId = req.params.paperId;
+    const userId = req.session.userId;
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    // Verify the requester is the paper owner
+    if (paper.authorId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Only the paper author can view editors' });
+    }
+
+    // Get all active editor accesses
+    const editors = await PaperAccess.find({
+      paperId: paperId,
+      accessLevel: 'editor',
+      status: 'ACTIVE',
+    }).populate('userId', 'fullName email');
+
+    res.status(200).json({
+      editors: editors,
+      count: editors.length,
+    });
+  } catch (error) {
+    console.error('Get paper editors error:', error);
+    res.status(500).json({ error: 'Failed to get editors' });
+  }
+};
+
+/**
+ * Revoke editor access from a paper (Author only - for their own papers)
+ */
+exports.revokeEditorAccess = async (req, res) => {
+  try {
+    const PaperAccess = require('../models/PaperAccess');
+    const paperId = req.params.paperId;
+    const { editorId } = req.body;
+    const userId = req.session.userId;
+    const clientIP = authMiddleware.getClientIP(req);
+
+    if (!editorId) {
+      return res.status(400).json({ error: 'Editor ID is required' });
+    }
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    // Verify the requester is the paper owner
+    if (paper.authorId.toString() !== userId.toString()) {
+      await auditService.logAccessDenied(
+        userId,
+        'REVOKE_EDITOR_ACCESS',
+        paperId,
+        clientIP,
+        'User is not the paper owner'
+      );
+      return res.status(403).json({ error: 'Only the paper author can revoke editor access' });
+    }
+
+    // Find and revoke the access
+    const access = await PaperAccess.findOneAndUpdate(
+      {
+        paperId: paperId,
+        userId: editorId,
+        accessLevel: 'editor',
+      },
+      {
+        status: 'REVOKED',
+        revokedAt: new Date(),
+        revokedBy: userId,
+        revocationReason: 'Revoked by paper author',
+      },
+      { new: true }
+    );
+
+    if (!access) {
+      return res.status(404).json({ error: 'Editor access not found' });
+    }
+
+    // Log the action
+    await auditService.log(
+      userId,
+      'REVOKE_EDITOR_ACCESS',
+      paperId,
+      'SUCCESS',
+      `Editor access revoked for user ${editorId}`,
+      clientIP
+    );
+
+    res.status(200).json({
+      message: 'Editor access revoked successfully',
+      access: access,
+    });
+  } catch (error) {
+    console.error('Revoke editor access error:', error);
+    res.status(500).json({ error: 'Failed to revoke editor access' });
   }
 };

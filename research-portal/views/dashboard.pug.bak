@@ -1,0 +1,279 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Dashboard - Research Paper Portal
+    link(rel='stylesheet', href='/styles/main.css')
+    link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+  body
+    nav.navbar
+      .container
+        .navbar-brand
+          h1
+            i.fas.fa-book
+            |  Research Portal
+        ul.nav-menu
+          li
+            a(href='/papers') Papers
+          li
+            a(href='/dashboard') Dashboard
+          li.user-menu
+            .user-info
+              span.username#userName -
+              span.role#userRole -
+            a(href='#logout', class='btn btn-danger') Logout
+
+    .dashboard
+      .container
+        .dashboard-header
+          h1 Dashboard
+          p#welcomeMsg Welcome back!
+
+        .form-message#message
+
+        #authorSection
+          .dashboard-grid
+            .dashboard-card
+              h3
+                i.fas.fa-file-upload
+                |  Submit New Paper
+              p Upload and submit your research paper for review
+              a(href='#submitPaperSection', id='showSubmitPaperBtn', class='btn btn-primary') Submit Paper
+
+            .dashboard-card
+              h3
+                i.fas.fa-check-circle
+                |  My Papers
+              .stat-value#authorPaperCount 0
+              .stat-label papers submitted
+              a(href='/papers?view=author', class='btn btn-secondary') View Papers
+
+            .dashboard-card
+              h3
+                i.fas.fa-file-alt
+                |  Review Status
+              p Track the status of your submitted papers
+              a(href='/papers?view=author', class='btn btn-secondary') Check Status
+
+        #reviewerSection(style='display: none;')
+          .dashboard-grid
+            .dashboard-card
+              h3
+                i.fas.fa-clipboard-list
+                |  Assigned Reviews
+              .stat-value#reviewCount 0
+              .stat-label papers to review
+              a(href='/papers?view=assigned', class='btn btn-primary') View Assigned
+
+            .dashboard-card
+              h3
+                i.fas.fa-star
+                |  Submitted Reviews
+              .stat-value#submittedReviewCount 0
+              .stat-label reviews completed
+              a(href='/papers?view=assigned', class='btn btn-secondary') View Reviews
+
+        #editorSection(style='display: none;')
+          .dashboard-grid
+            .dashboard-card
+              h3
+                i.fas.fa-users
+                |  Total Submissions
+              .stat-value#totalPaperCount 0
+              .stat-label papers in system
+              a(href='/papers?view=all', class='btn btn-primary') Manage Papers
+
+            .dashboard-card
+              h3
+                i.fas.fa-tasks
+                |  Pending Review
+              .stat-value#pendingCount 0
+              .stat-label awaiting decisions
+              a(href='/papers?view=pending', class='btn btn-secondary') Review
+
+            .dashboard-card
+              h3
+                i.fas.fa-signature
+                |  Decisions Made
+              .stat-value#decisionsCount 0
+              .stat-label finalized decisions
+              a(href='/papers?view=decided', class='btn btn-secondary') View
+
+        // Submit Paper Form (Author only)
+        #submitPaperSection.form-section(style='display: none;')
+          .auth-card
+            h2
+              i.fas.fa-file-upload
+              |  Submit Research Paper
+
+            form#submitPaperForm
+              .form-group
+                label(for='title') Paper Title
+                input(type='text', id='title', name='title', required, placeholder='Enter paper title', minlength='10', maxlength='500')
+              
+              .form-group
+                label(for='abstract') Abstract
+                textarea(id='abstract', name='abstract', required, placeholder='Enter paper abstract', minlength='100', maxlength='5000')
+              
+              .form-group
+                label(for='keywords') Keywords (comma-separated)
+                input(type='text', id='keywords', name='keywords', placeholder='e.g., machine learning, security, cryptography')
+              
+              .form-group
+                label(for='paperFile') PDF File
+                input(type='file', id='paperFile', name='paperFile', required, accept='.pdf')
+                .form-hint Upload only PDF files (max 50MB)
+              
+              button(type='submit', class='btn btn-primary btn-block')
+                i.fas.fa-upload
+                |  Submit Paper
+              
+              .form-message#submitMessage
+
+    script.
+      // Load current user
+      async function loadUser() {
+        try {
+          const response = await fetch('/api/auth/me', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            const user = data.user;
+            document.getElementById('userName').textContent = user.fullName;
+            document.getElementById('userRole').textContent = user.role;
+            document.getElementById('welcomeMsg').textContent = `Welcome back, ${user.fullName}!`;
+            
+            // Show role-specific sections
+            if (user.role === 'Author') {
+              document.getElementById('authorSection').style.display = 'block';
+              loadAuthorStats(user);
+            } else if (user.role === 'Reviewer') {
+              document.getElementById('reviewerSection').style.display = 'block';
+              loadReviewerStats(user);
+            } else if (user.role === 'Editor') {
+              document.getElementById('editorSection').style.display = 'block';
+              loadEditorStats(user);
+            }
+          } else {
+            window.location.href = '/login';
+          }
+        } catch (error) {
+          console.error('Error loading user:', error);
+          window.location.href = '/login';
+        }
+      }
+      
+      async function loadAuthorStats(user) {
+        try {
+          const response = await fetch('/api/papers', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById('authorPaperCount').textContent = data.count || 0;
+          }
+        } catch (error) {
+          console.error('Error loading author stats:', error);
+        }
+      }
+      
+      async function loadReviewerStats(user) {
+        try {
+          const response = await fetch('/api/papers', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById('reviewCount').textContent = data.count || 0;
+          }
+        } catch (error) {
+          console.error('Error loading reviewer stats:', error);
+        }
+      }
+      
+      async function loadEditorStats(user) {
+        try {
+          const response = await fetch('/api/papers', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById('totalPaperCount').textContent = data.count || 0;
+            // Count pending and decided
+            const pending = data.papers.filter(p => !p.finalDecision).length;
+            const decided = data.papers.filter(p => p.finalDecision).length;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('decisionsCount').textContent = decided;
+          }
+        } catch (error) {
+          console.error('Error loading editor stats:', error);
+        }
+      }
+      
+      // Submit paper form
+      document.getElementById('submitPaperForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('submitMessage');
+        messageEl.innerHTML = '';
+        messageEl.className = '';
+        
+        const formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('abstractText', document.getElementById('abstract').value);
+        formData.append('keywords', document.getElementById('keywords').value);
+        formData.append('paper', document.getElementById('paperFile').files[0]);
+        
+        const submitBtn = document.querySelector('#submitPaperForm button');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        
+        try {
+          const response = await fetch('/api/papers', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            messageEl.className = 'success';
+            messageEl.innerHTML = `<i class="fas fa-check-circle"></i> Paper submitted successfully!`;
+            document.getElementById('submitPaperForm').reset();
+            setTimeout(() => {
+              window.location.href = '/papers';
+            }, 2000);
+          } else {
+            messageEl.className = 'error';
+            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Submission failed'}`;
+          }
+        } catch (error) {
+          messageEl.className = 'error';
+          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-upload"></i> Submit Paper';
+        }
+      });
+      
+      // Logout
+      document.querySelector('a[href="#logout"]')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          window.location.href = '/login';
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      });
+      
+      // Load user on page load
+      // Show submit form when author clicks the Submit Paper button
+      const showSubmitBtn = document.getElementById('showSubmitPaperBtn');
+      if (showSubmitBtn) {
+        showSubmitBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.getElementById('submitPaperSection').style.display = 'block';
+          document.getElementById('title').focus();
+          window.scrollTo({ top: document.getElementById('submitPaperSection').offsetTop - 80, behavior: 'smooth' });
+        });
+      }
+
+      loadUser();

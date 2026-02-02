@@ -1,6 +1,7 @@
 const Paper = require('../models/Paper');
 const Review = require('../models/Review');
 const Decision = require('../models/Decision');
+const PaperAccess = require('../models/PaperAccess');
 const auditService = require('../services/auditService');
 const { getClientIP } = require('./authMiddleware');
 
@@ -25,6 +26,7 @@ const { getClientIP } = require('./authMiddleware');
 /**
  * Middleware: Check authorization for Paper access
  * Enforces role-based access to papers
+ * Also checks PaperAccess database for additional permissions (e.g., editors granted access)
  */
 exports.canAccessPaper = async (req, res, next) => {
   try {
@@ -55,15 +57,23 @@ exports.canAccessPaper = async (req, res, next) => {
         hasAccess = true;
         req.accessLevel = 'owner'; // Can read, write own
       } else {
-        hasAccess = false;
+        // Check if author has been granted editor access via PaperAccess
+        const access = await PaperAccess.findOne({
+          paperId: paperId,
+          userId: userId,
+          accessLevel: 'editor',
+          status: 'ACTIVE',
+        });
+        if (access) {
+          hasAccess = true;
+          req.accessLevel = 'editor'; // Granted editor access
+        }
       }
     } else if (user.role === 'Reviewer') {
       // Reviewers can only read papers assigned to them
       if (paper.assignedReviewers.includes(userId)) {
         hasAccess = true;
         req.accessLevel = 'read'; // Can only read
-      } else {
-        hasAccess = false;
       }
     }
 

@@ -6,6 +6,408 @@ html(lang='en')
     title Dashboard - Research Paper Portal
     link(rel='stylesheet', href='/styles/main.css')
     link(href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', rel='stylesheet')
+    style.
+      :root {
+        --primary-color: #0066cc;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --light-bg: #f9fafb;
+        --border-color: #e5e7eb;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: var(--light-bg);
+        color: #1f2937;
+      }
+
+      .navbar {
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .navbar .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .navbar-brand h1 {
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--primary-color);
+      }
+
+      .nav-menu {
+        display: flex;
+        list-style: none;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      .nav-menu a {
+        text-decoration: none;
+        color: #4b5563;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      .nav-menu a:hover {
+        color: var(--primary-color);
+      }
+
+      .user-menu {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-left: 1px solid var(--border-color);
+        padding-left: 2rem;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .username {
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .role {
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+      }
+
+      .dashboard {
+        padding: 2rem 0;
+      }
+
+      .dashboard-header {
+        margin-bottom: 3rem;
+      }
+
+      .dashboard-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #1f2937;
+      }
+
+      .dashboard-header p {
+        color: #6b7280;
+        font-size: 1.125rem;
+      }
+
+      .form-message {
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      .form-message.success {
+        background: #d1fae5;
+        color: #065f46;
+        border-left: 4px solid var(--success-color);
+      }
+
+      .form-message.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border-left: 4px solid var(--danger-color);
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .dashboard-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid var(--primary-color);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .dashboard-card h3 {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #1f2937;
+      }
+
+      .dashboard-card i {
+        color: var(--primary-color);
+        font-size: 1.5rem;
+      }
+
+      .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        font-size: 1rem;
+      }
+
+      .btn-primary {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0052a3;
+      }
+
+      .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid var(--border-color);
+      }
+
+      .btn-secondary:hover {
+        background: #e5e7eb;
+      }
+
+      .btn-danger {
+        background: var(--danger-color);
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #dc2626;
+      }
+
+      .btn-block {
+        width: 100%;
+      }
+
+      .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        width: 90%;
+        animation: modalSlideIn 0.3s ease-out;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-close:hover {
+        color: #1f2937;
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .form-input,
+      .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .form-input:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      .editor-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        margin-bottom: 0.75rem;
+        background: #f9fafb;
+      }
+
+      .editor-item span {
+        font-weight: 500;
+      }
+
+      .paper-editors {
+        border: 1px solid var(--border-color);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: white;
+      }
+
+      .paper-editors h4 {
+        margin: 0 0 1rem 0;
+        color: #1f2937;
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 2rem;
+        color: #6b7280;
+      }
+
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: #6b7280;
+      }
+
+      .spinner {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
   body
     nav.navbar
       .container
@@ -32,14 +434,15 @@ html(lang='en')
 
         .form-message#message
 
-        #authorSection
+        // ==================== AUTHOR DASHBOARD ====================
+        #authorSection(style='display: none;')
           .dashboard-grid
             .dashboard-card
               h3
                 i.fas.fa-file-upload
                 |  Submit New Paper
               p Upload and submit your research paper for review
-              a(href='#submitPaperSection', id='showSubmitPaperBtn', class='btn btn-primary') Submit Paper
+              a(href='#showSubmitModal', class='btn btn-primary') Submit Paper
 
             .dashboard-card
               h3
@@ -51,11 +454,20 @@ html(lang='en')
 
             .dashboard-card
               h3
+                i.fas.fa-users
+                |  Paper Collaborators
+              .stat-value#collaboratorCount 0
+              .stat-label active editors
+              a(href='#showCollaborators', class='btn btn-secondary') Manage Access
+
+            .dashboard-card
+              h3
                 i.fas.fa-file-alt
                 |  Review Status
               p Track the status of your submitted papers
               a(href='/papers?view=author', class='btn btn-secondary') Check Status
 
+        // ==================== REVIEWER DASHBOARD ====================
         #reviewerSection(style='display: none;')
           .dashboard-grid
             .dashboard-card
@@ -74,6 +486,22 @@ html(lang='en')
               .stat-label reviews completed
               a(href='/papers?view=assigned', class='btn btn-secondary') View Reviews
 
+            .dashboard-card
+              h3
+                i.fas.fa-file-pdf
+                |  Download & Read
+              p Access PDF files to review papers
+              a(href='/papers?view=assigned', class='btn btn-secondary') Read Papers
+
+            .dashboard-card
+              h3
+                i.fas.fa-clock
+                |  Pending Reviews
+              .stat-value#pendingDeadlines 0
+              .stat-label awaiting submission
+              a(href='/papers?view=assigned', class='btn btn-secondary') View
+
+        // ==================== EDITOR DASHBOARD ====================
         #editorSection(style='display: none;')
           .dashboard-grid
             .dashboard-card
@@ -98,62 +526,74 @@ html(lang='en')
                 |  Decisions Made
               .stat-value#decisionsCount 0
               .stat-label finalized decisions
-              a(href='/papers?view=decided', class='btn btn-secondary') View
+              a(href='/papers?view=all', class='btn btn-secondary') View All
 
-        // Submit Paper Form (Author only)
-        #submitPaperSection.form-section(style='display: none;')
-          .auth-card
-            h2
-              i.fas.fa-file-upload
-              |  Submit Research Paper
+            .dashboard-card
+              h3
+                i.fas.fa-hourglass-half
+                |  Under Review
+              .stat-value#underReviewCount 0
+              .stat-label papers being reviewed
+              a(href='/papers?view=all', class='btn btn-secondary') Review
 
-            form#submitPaperForm
-              .form-group
-                label(for='title') Paper Title
-                input(type='text', id='title', name='title', required, placeholder='Enter paper title', minlength='10', maxlength='500')
-              
-              .form-group
-                label(for='abstract') Abstract
-                textarea(id='abstract', name='abstract', required, placeholder='Enter paper abstract', minlength='100', maxlength='5000')
-              
-              .form-group
-                label(for='keywords') Keywords (comma-separated)
-                input(type='text', id='keywords', name='keywords', placeholder='e.g., machine learning, security, cryptography')
-              
-              .form-group
-                label(for='paperFile') PDF File
-                input(type='file', id='paperFile', name='paperFile', required, accept='.pdf')
-                .form-hint Upload only PDF files (max 50MB)
-              
-              button(type='submit', class='btn btn-primary btn-block')
+    // ==================== SUBMIT PAPER MODAL ====================
+    #submitModal.modal
+      .modal-content(onclick='event.stopPropagation()')
+        .modal-header
+          h2 Submit New Paper
+          button.btn-close(onclick='closeModal("submitModal")') ×
+        .modal-body
+          form#submitForm(enctype='multipart/form-data')
+            .form-group
+              label(for='title') Paper Title *
+              input#title.form-input(type='text', placeholder='Enter paper title', minlength='10', maxlength='500', required)
+
+            .form-group
+              label(for='abstract') Abstract *
+              textarea#abstract.form-textarea(placeholder='Enter paper abstract', minlength='100', maxlength='5000', required)
+
+            .form-group
+              label(for='keywords') Keywords (comma-separated)
+              input#keywords.form-input(type='text', placeholder='e.g., machine learning, AI, security')
+
+            .form-group
+              label(for='file') PDF File *
+              input#file.form-input(type='file', accept='.pdf', required)
+              .form-hint Maximum file size: 50MB
+
+            .form-group
+              button.btn.btn-primary.btn-block(type='submit') 
                 i.fas.fa-upload
                 |  Submit Paper
-              
-              .form-message#submitMessage
+              button.btn.btn-secondary.btn-block(type='button', onclick='closeModal("submitModal")') Cancel
+
+    // ==================== MANAGE COLLABORATORS MODAL ====================
+    #collaboratorsModal.modal
+      .modal-content(onclick='event.stopPropagation()')
+        .modal-header
+          h2 Manage Paper Collaborators
+          button.btn-close(onclick='closeModal("collaboratorsModal")') ×
+        .modal-body
+          #collaboratorsList
+            .loading
+              i.fas.fa-spinner.spinner
+              |  Loading...
 
     script.
+      let currentUser = null;
+      let allPapers = [];
+
       // Load current user
       async function loadUser() {
         try {
           const response = await fetch('/api/auth/me', { credentials: 'include' });
           if (response.ok) {
             const data = await response.json();
-            const user = data.user;
-            document.getElementById('userName').textContent = user.fullName;
-            document.getElementById('userRole').textContent = user.role;
-            document.getElementById('welcomeMsg').textContent = `Welcome back, ${user.fullName}!`;
-            
-            // Show role-specific sections
-            if (user.role === 'Author') {
-              document.getElementById('authorSection').style.display = 'block';
-              loadAuthorStats(user);
-            } else if (user.role === 'Reviewer') {
-              document.getElementById('reviewerSection').style.display = 'block';
-              loadReviewerStats(user);
-            } else if (user.role === 'Editor') {
-              document.getElementById('editorSection').style.display = 'block';
-              loadEditorStats(user);
-            }
+            currentUser = data.user;
+            document.getElementById('userName').textContent = data.user.fullName;
+            document.getElementById('userRole').textContent = data.user.role;
+            document.getElementById('welcomeMsg').textContent = `Welcome back, ${data.user.fullName}!`;
+            return data.user;
           } else {
             window.location.href = '/login';
           }
@@ -162,96 +602,290 @@ html(lang='en')
           window.location.href = '/login';
         }
       }
-      
-      async function loadAuthorStats(user) {
+
+      // Load papers and stats based on role
+      async function loadDashboard() {
         try {
           const response = await fetch('/api/papers', { credentials: 'include' });
           if (response.ok) {
             const data = await response.json();
-            document.getElementById('authorPaperCount').textContent = data.count || 0;
+            allPapers = data.papers || [];
+            updateDashboard(allPapers);
+          } else {
+            showMessage('Failed to load papers', 'error');
           }
         } catch (error) {
-          console.error('Error loading author stats:', error);
+          console.error('Error loading papers:', error);
+          showMessage('Error loading dashboard data', 'error');
         }
       }
-      
-      async function loadReviewerStats(user) {
-        try {
-          const response = await fetch('/api/papers', { credentials: 'include' });
-          if (response.ok) {
-            const data = await response.json();
-            document.getElementById('reviewCount').textContent = data.count || 0;
+
+      // Update dashboard based on role
+      function updateDashboard(papers) {
+        if (!currentUser) return;
+
+        // Hide all sections first
+        document.getElementById('authorSection').style.display = 'none';
+        document.getElementById('reviewerSection').style.display = 'none';
+        document.getElementById('editorSection').style.display = 'none';
+
+        if (currentUser.role === 'Author') {
+          showAuthorDashboard(papers);
+        } else if (currentUser.role === 'Reviewer') {
+          showReviewerDashboard(papers);
+        } else if (currentUser.role === 'Editor') {
+          showEditorDashboard(papers);
+        }
+      }
+
+      // Author Dashboard
+      function showAuthorDashboard(papers) {
+        document.getElementById('authorSection').style.display = 'block';
+
+        // Count author's papers
+        const authorPapers = papers.filter(p => p.authorId._id === currentUser._id);
+        document.getElementById('authorPaperCount').textContent = authorPapers.length;
+
+        // Count total collaborators across all papers
+        let totalEditors = 0;
+        authorPapers.forEach(p => {
+          if (p.assignedEditors) {
+            totalEditors += p.assignedEditors.length;
           }
-        } catch (error) {
-          console.error('Error loading reviewer stats:', error);
-        }
+        });
+        document.getElementById('collaboratorCount').textContent = totalEditors;
       }
-      
-      async function loadEditorStats(user) {
-        try {
-          const response = await fetch('/api/papers', { credentials: 'include' });
-          if (response.ok) {
-            const data = await response.json();
-            document.getElementById('totalPaperCount').textContent = data.count || 0;
-            // Count pending and decided
-            const pending = data.papers.filter(p => !p.finalDecision).length;
-            const decided = data.papers.filter(p => p.finalDecision).length;
-            document.getElementById('pendingCount').textContent = pending;
-            document.getElementById('decisionsCount').textContent = decided;
-          }
-        } catch (error) {
-          console.error('Error loading editor stats:', error);
-        }
+
+      // Reviewer Dashboard
+      function showReviewerDashboard(papers) {
+        document.getElementById('reviewerSection').style.display = 'block';
+
+        // Count assigned papers
+        const assignedPapers = papers.filter(p => 
+          p.assignedReviewers && p.assignedReviewers.some(r => r._id === currentUser._id)
+        );
+        document.getElementById('reviewCount').textContent = assignedPapers.length;
+
+        // Count submitted reviews (placeholder - would need actual review count)
+        document.getElementById('submittedReviewCount').textContent = '0';
+
+        // Count pending (Under Review status)
+        const pending = assignedPapers.filter(p => p.status === 'UNDER_REVIEW');
+        document.getElementById('pendingDeadlines').textContent = pending.length;
       }
-      
+
+      // Editor Dashboard
+      function showEditorDashboard(papers) {
+        document.getElementById('editorSection').style.display = 'block';
+
+        document.getElementById('totalPaperCount').textContent = papers.length;
+
+        const pendingPapers = papers.filter(p => p.status === 'SUBMITTED');
+        document.getElementById('pendingCount').textContent = pendingPapers.length;
+
+        const underReview = papers.filter(p => p.status === 'UNDER_REVIEW');
+        document.getElementById('underReviewCount').textContent = underReview.length;
+
+        const decided = papers.filter(p => 
+          p.status === 'ACCEPTED' || p.status === 'REJECTED' || p.status === 'REVISION_REQUESTED'
+        );
+        document.getElementById('decisionsCount').textContent = decided.length;
+      }
+
       // Submit paper form
-      document.getElementById('submitPaperForm')?.addEventListener('submit', async (e) => {
+      document.getElementById('submitForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const messageEl = document.getElementById('submitMessage');
-        messageEl.innerHTML = '';
-        messageEl.className = '';
-        
+
         const formData = new FormData();
         formData.append('title', document.getElementById('title').value);
         formData.append('abstractText', document.getElementById('abstract').value);
         formData.append('keywords', document.getElementById('keywords').value);
-        formData.append('paper', document.getElementById('paperFile').files[0]);
-        
-        const submitBtn = document.querySelector('#submitPaperForm button');
+        formData.append('paper', document.getElementById('file').files[0]);
+
+        const submitBtn = document.querySelector('#submitForm button[type="submit"]');
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
         try {
           const response = await fetch('/api/papers', {
             method: 'POST',
-            body: formData,
-            credentials: 'include'
+            credentials: 'include',
+            body: formData
           });
-          
-          const data = await response.json();
-          
+
           if (response.ok) {
-            messageEl.className = 'success';
-            messageEl.innerHTML = `<i class="fas fa-check-circle"></i> Paper submitted successfully!`;
-            document.getElementById('submitPaperForm').reset();
-            setTimeout(() => {
-              window.location.href = '/papers';
-            }, 2000);
+            const data = await response.json();
+            showMessage('Paper submitted successfully!', 'success');
+            closeModal('submitModal');
+            document.getElementById('submitForm').reset();
+            loadDashboard();
           } else {
-            messageEl.className = 'error';
-            messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Submission failed'}`;
+            const error = await response.json();
+            showMessage(error.error || 'Failed to submit paper', 'error');
           }
         } catch (error) {
-          messageEl.className = 'error';
-          messageEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+          console.error('Error submitting paper:', error);
+          showMessage('Error submitting paper', 'error');
         } finally {
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<i class="fas fa-upload"></i> Submit Paper';
         }
       });
-      
+
+      // Modal functions
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+      }
+
+      function openModal(modalId) {
+        document.getElementById(modalId).classList.add('show');
+      }
+
+      // Modal click handlers
+      document.getElementById('submitModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeModal('submitModal');
+        }
+      });
+
+      document.getElementById('collaboratorsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeModal('collaboratorsModal');
+        }
+      });
+
+      // Show modals on link click
+      document.querySelectorAll('a[href="#showSubmitModal"]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          openModal('submitModal');
+        });
+      });
+
+      document.querySelectorAll('a[href="#showCollaborators"]').forEach(el => {
+        el.addEventListener('click', async (e) => {
+          e.preventDefault();
+          await showCollaboratorsList();
+          openModal('collaboratorsModal');
+        });
+      });
+
+      // Show collaborators list
+      async function showCollaboratorsList() {
+        const authorPapers = allPapers.filter(p => p.authorId._id === currentUser._id);
+        
+        if (authorPapers.length === 0) {
+          document.getElementById('collaboratorsList').innerHTML = '<div class="no-data">No papers yet</div>';
+          return;
+        }
+
+        const html = await Promise.all(authorPapers.map(async (paper) => {
+          try {
+            const response = await fetch(`/api/papers/${paper._id}/editors`, {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const data = await response.json();
+              const editorsList = data.editors.map(e => `
+                <div class="editor-item">
+                  <div>
+                    <div style="font-weight: 600;">${e.userId.fullName}</div>
+                    <div style="font-size: 0.875rem; color: #6b7280;">${e.userId.email}</div>
+                  </div>
+                  <button class="btn btn-danger btn-sm" onclick="revokeEditor('${paper._id}', '${e.userId._id}')">
+                    Remove
+                  </button>
+                </div>
+              `).join('');
+              
+              return `
+                <div class="paper-editors">
+                  <h4>${paper.title}</h4>
+                  ${editorsList || '<p style="color: #6b7280;">No editors assigned</p>'}
+                  <button class="btn btn-primary btn-sm" onclick="showAddEditorForm('${paper._id}')">
+                    + Add Editor
+                  </button>
+                </div>
+              `;
+            }
+          } catch (error) {
+            console.error('Error loading editors:', error);
+          }
+          return '';
+        }));
+
+        document.getElementById('collaboratorsList').innerHTML = html.join('');
+      }
+
+      // Add editor form
+      function showAddEditorForm(paperId) {
+        const email = prompt('Enter editor email:');
+        if (email) {
+          grantEditorAccess(paperId, email);
+        }
+      }
+
+      // Grant editor access
+      async function grantEditorAccess(paperId, editorEmail) {
+        try {
+          const response = await fetch(`/api/papers/${paperId}/add-editor`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ editorEmail })
+          });
+
+          if (response.ok) {
+            showMessage('Editor access granted!', 'success');
+            await showCollaboratorsList();
+          } else {
+            const error = await response.json();
+            showMessage(error.error || 'Failed to grant access', 'error');
+          }
+        } catch (error) {
+          console.error('Error granting access:', error);
+          showMessage('Error granting access', 'error');
+        }
+      }
+
+      // Revoke editor access
+      async function revokeEditor(paperId, editorId) {
+        if (confirm('Are you sure you want to revoke this editor\'s access?')) {
+          try {
+            const response = await fetch(`/api/papers/${paperId}/revoke-editor`, {
+              method: 'DELETE',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ editorId })
+            });
+
+            if (response.ok) {
+              showMessage('Editor access revoked!', 'success');
+              await showCollaboratorsList();
+            } else {
+              const error = await response.json();
+              showMessage(error.error || 'Failed to revoke access', 'error');
+            }
+          } catch (error) {
+            console.error('Error revoking access:', error);
+            showMessage('Error revoking access', 'error');
+          }
+        }
+      }
+
+      // Show message
+      function showMessage(message, type) {
+        const msgElement = document.getElementById('message');
+        msgElement.textContent = message;
+        msgElement.className = type;
+        msgElement.style.display = 'block';
+        setTimeout(() => {
+          msgElement.style.display = 'none';
+        }, 5000);
+      }
+
       // Logout
-      document.querySelector('a[href="#logout"]')?.addEventListener('click', async (e) => {
+      document.querySelector('a[href="#logout"]').addEventListener('click', async (e) => {
         e.preventDefault();
         try {
           await fetch('/api/auth/logout', {
@@ -263,17 +897,11 @@ html(lang='en')
           console.error('Logout error:', error);
         }
       });
-      
-      // Load user on page load
-      // Show submit form when author clicks the Submit Paper button
-      const showSubmitBtn = document.getElementById('showSubmitPaperBtn');
-      if (showSubmitBtn) {
-        showSubmitBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          document.getElementById('submitPaperSection').style.display = 'block';
-          document.getElementById('title').focus();
-          window.scrollTo({ top: document.getElementById('submitPaperSection').offsetTop - 80, behavior: 'smooth' });
-        });
-      }
 
-      loadUser();
+      // Initialize
+      (async () => {
+        const user = await loadUser();
+        if (user) {
+          await loadDashboard();
+        }
+      })();
