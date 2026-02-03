@@ -207,27 +207,32 @@ exports.downloadPaper = async (req, res) => {
 exports.listPapers = async (req, res) => {
   try {
     console.log('[listPapers] Starting...');
+    console.log('[listPapers] Session:', req.session);
+    console.log('[listPapers] Session userId:', req.session?.userId);
+    console.log('[listPapers] req.user:', req.user);
+
     const userId = req.session.userId;
     const user = req.user;
-    
+
     // Safety check: ensure user is loaded
     if (!user || !userId) {
       console.error('[listPapers] User not loaded: user=', !!user, 'userId=', !!userId);
       return res.status(401).json({ error: 'User not authenticated' });
     }
-    
+
     if (!user.role) {
       console.error('[listPapers] User has no role:', user);
       return res.status(400).json({ error: 'Invalid user data' });
     }
-    
+
     console.log('[listPapers] User role:', user.role);
+    console.log('[listPapers] User ID:', userId);
     let query = {};
 
     if (user.role === 'Author') {
       // Authors see their own papers
       query = { authorId: userId };
-      console.log('[listPapers] Author query');
+      console.log('[listPapers] Author query:', query);
     } else if (user.role === 'Reviewer') {
       // Reviewers should be able to see all papers per updated requirement
       query = {}; // all papers
@@ -244,7 +249,7 @@ exports.listPapers = async (req, res) => {
 
       const accessPaperIds = accessRecords.map(a => a.paperId.toString());
       console.log('[listPapers] Editor has access to', accessPaperIds.length, 'papers');
-      
+
       if (accessPaperIds.length > 0) {
         query = { _id: { $in: accessPaperIds } };
       } else {
@@ -253,14 +258,17 @@ exports.listPapers = async (req, res) => {
       }
     }
 
+    console.log('[listPapers] Final query:', query);
     console.log('[listPapers] Fetching papers with query...');
+
     let papers = await Paper.find(query)
       .select('-encryptedData -encryptedAESKey -encryptedIV -fileHash')
       .populate('authorId', 'fullName email institution')
       .populate('assignedReviewers', 'fullName email')
       .sort({ submittedAt: -1 });
-    
+
     console.log('[listPapers] Found', papers.length, 'papers');
+    console.log('[listPapers] Papers:', papers.map(p => ({ id: p._id, title: p.title, author: p.authorId?.fullName })));
 
     // For Authors, also get papers they have editor access to (so they can collaborate)
     if (user.role === 'Author') {
@@ -285,10 +293,13 @@ exports.listPapers = async (req, res) => {
           .sort({ submittedAt: -1 });
 
         papers.push(...accessPapers);
+        console.log('[listPapers] Added', accessPapers.length, 'editor access papers');
       }
     }
 
-    console.log('[listPapers] Returning', papers.length, 'papers');
+    console.log('[listPapers] Total papers to return:', papers.length);
+    console.log('[listPapers] Returning papers:', papers.map(p => ({ id: p._id, title: p.title, author: p.authorId?.fullName })));
+
     res.status(200).json({
       papers: papers,
       count: papers.length,

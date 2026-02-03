@@ -607,16 +607,20 @@ html(lang='en')
       async function loadDashboard() {
         try {
           console.log('Dashboard: loadDashboard starting');
+          console.log('Dashboard: Current user:', currentUser);
+          
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
           
+          console.log('Dashboard: Making API call to /api/papers');
           const response = await fetch('/api/papers', { 
             credentials: 'include',
             signal: controller.signal
           });
           clearTimeout(timeoutId);
           
-          console.log('Dashboard: API response:', response.status);
+          console.log('Dashboard: API response status:', response.status);
+          console.log('Dashboard: API response headers:', [...response.headers.entries()]);
           
           if (response.status === 401) {
             console.log('Dashboard: Session expired, redirecting to login');
@@ -626,11 +630,15 @@ html(lang='en')
           
           if (response.ok) {
             const data = await response.json();
+            console.log('Dashboard: API response data:', data);
             allPapers = data.papers || [];
-            console.log('Dashboard: Loaded papers:', allPapers.length);
+            console.log('Dashboard: Loaded papers count:', allPapers.length);
+            console.log('Dashboard: Papers data:', allPapers);
             updateDashboard(allPapers);
           } else {
             console.error('Dashboard: API returned status:', response.status);
+            const errorText = await response.text();
+            console.error('Dashboard: Error response:', errorText);
             const errorMsg = `Failed to load papers (${response.status})`;
             showMessage(errorMsg, 'error');
             updateDashboard([]); // Show empty dashboard

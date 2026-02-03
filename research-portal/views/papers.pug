@@ -176,6 +176,19 @@ html(lang='en')
         tbody.innerHTML = papers.map(paper => {
           console.log('[renderPapers] Paper:', paper);
           const canReview = paper.status === 'SUBMITTED' || paper.status === 'UNDER_REVIEW';
+          let actionButtons = '';
+          if (canReview) {
+            actionButtons = `
+                  <button class="btn btn-success btn-sm" onclick="updatePaperStatus('${paper._id}', 'ACCEPTED')" style="background: #10b981; color: white; margin-right: 5px;">
+                    <i class="fas fa-check"></i> Accept
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="updatePaperStatus('${paper._id}', 'REJECTED')" style="background: #ef4444; color: white;">
+                    <i class="fas fa-times"></i> Reject
+                  </button>`;
+          } else {
+            actionButtons = `<span style="color: #64748b; font-size: 0.875rem;">No action needed</span>`;
+          }
+          
           return `
             <tr id="paper-row-${paper._id}">
               <td>
@@ -191,16 +204,7 @@ html(lang='en')
               </td>
               <td>${new Date(paper.submittedAt).toLocaleDateString()}</td>
               <td>
-                ${canReview ? `
-                  <button class="btn btn-success btn-sm" onclick="updatePaperStatus('${paper._id}', 'ACCEPTED')" style="background: #10b981; color: white; margin-right: 5px;">
-                    <i class="fas fa-check"></i> Accept
-                  </button>
-                  <button class="btn btn-danger btn-sm" onclick="updatePaperStatus('${paper._id}', 'REJECTED')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-times"></i> Reject
-                  </button>
-                ` : `
-                  <span style="color: #64748b; font-size: 0.875rem;">No action needed</span>
-                `}
+                ${actionButtons}
               </td>
             </tr>
           `;
@@ -258,7 +262,7 @@ html(lang='en')
       
       async function viewPaper(paperId) {
         try {
-          const response = await fetch(\`/api/papers/\${paperId}\`, { credentials: 'include' });
+          const response = await fetch(`/api/papers/${paperId}`, { credentials: 'include' });
           if (response.ok) {
             const data = await response.json();
             showPaperModal(data.paper);
@@ -273,28 +277,28 @@ html(lang='en')
       function showPaperModal(paper) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
-        modal.innerHTML = \`
+        modal.innerHTML = `
           <div class="modal-content">
             <div class="modal-header">
-              <h2>\${paper.title}</h2>
+              <h2>${paper.title}</h2>
               <button class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
               <h4>Abstract</h4>
-              <p>\${paper.abstractText}</p>
+              <p>${paper.abstractText}</p>
               
               <h4>Status</h4>
-              <p><span class="status-badge status-\${paper.status.toLowerCase().replace('_', '-')}">\${paper.status}</span></p>
+              <p><span class="status-badge status-${paper.status.toLowerCase().replace('_', '-')}">${paper.status}</span></p>
               
               <h4>Metadata</h4>
               <ul>
-                <li><strong>Author:</strong> \${paper.authorId?.fullName || 'Unknown'}</li>
-                <li><strong>Submitted:</strong> \${new Date(paper.submittedAt).toLocaleDateString()}</li>
-                <li><strong>File:</strong> \${paper.fileName}</li>
+                <li><strong>Author:</strong> ${paper.authorId?.fullName || 'Unknown'}</li>
+                <li><strong>Submitted:</strong> ${new Date(paper.submittedAt).toLocaleDateString()}</li>
+                <li><strong>File:</strong> ${paper.fileName}</li>
               </ul>
               
               <div class="button-group">
-                <a href="/api/papers/\${paper._id}/download" class="btn btn-primary">
+                <a href="/api/papers/${paper._id}/download" class="btn btn-primary">
                   <i class="fas fa-download"></i> Download PDF
                 </a>
                 <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
@@ -303,7 +307,7 @@ html(lang='en')
               </div>
             </div>
           </div>
-        \`;
+        `;
         
         document.body.appendChild(modal);
         
