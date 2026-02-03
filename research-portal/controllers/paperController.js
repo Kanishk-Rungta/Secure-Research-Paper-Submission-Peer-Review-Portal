@@ -618,3 +618,55 @@ exports.revokeEditorAccess = async (req, res) => {
     res.status(500).json({ error: 'Failed to revoke editor access' });
   }
 };
+
+/**
+ * Reviewer decision on paper (Reviewer only)
+ */
+exports.reviewerDecision = async (req, res) => {
+  try {
+    const paperId = req.params.paperId;
+    const { status } = req.body;
+    const reviewerId = req.session.userId;
+
+    console.log(`[reviewerDecision] Starting: paperId=${paperId}, status=${status}, reviewerId=${reviewerId}`);
+
+    // Validate status (reviewers can only accept or reject)
+    if (!['ACCEPTED', 'REJECTED'].includes(status)) {
+      console.log(`[reviewerDecision] Invalid status: ${status}`);
+      return res.status(400).json({ error: 'Reviewers can only accept or reject papers' });
+    }
+
+    // Check if paper exists and is in reviewable status
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      console.log(`[reviewerDecision] Paper not found: ${paperId}`);
+      return res.status(404).json({ error: 'Paper not found' });
+    }
+
+    console.log(`[reviewerDecision] Paper found: ${paper.title}, current status: ${paper.status}`);
+
+    if (!['SUBMITTED', 'UNDER_REVIEW'].includes(paper.status)) {
+      console.log(`[reviewerDecision] Paper not in reviewable status: ${paper.status}`);
+      return res.status(400).json({ error: 'Paper is not in a reviewable status' });
+    }
+
+    // Update paper status only (don't touch finalDecision as it's for editors)
+    paper.status = status;
+    await paper.save();
+
+    console.log(`[reviewerDecision] Paper ${paperId} updated to ${status} by reviewer ${reviewerId}`);
+
+    res.status(200).json({
+      message: `Paper ${status.toLowerCase()} successfully`,
+      paper: {
+        _id: paper._id,
+        title: paper.title,
+        status: paper.status,
+        updatedAt: paper.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('[reviewerDecision] Error:', error);
+    res.status(500).json({ error: 'Failed to update paper decision: ' + error.message });
+  }
+};

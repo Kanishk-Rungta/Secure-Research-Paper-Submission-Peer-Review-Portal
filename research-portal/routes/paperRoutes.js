@@ -87,6 +87,17 @@ router.put(
 );
 
 /**
+ * PUT /papers/:paperId/decision
+ * Reviewer decision on paper (Reviewer only)
+ */
+router.put(
+  '/:paperId/decision',
+  aclMiddleware.canAccessPaper,
+  aclMiddleware.requireReviewer,
+  paperController.reviewerDecision
+);
+
+/**
  * GET /papers/:paperId/with-reviews
  * Get paper with all reviews (Editor only)
  */

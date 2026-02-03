@@ -473,33 +473,18 @@ html(lang='en')
             .dashboard-card
               h3
                 i.fas.fa-clipboard-list
-                |  Assigned Reviews
+                |  Papers to Review
               .stat-value#reviewCount 0
-              .stat-label papers to review
-              a(href='/papers?view=assigned', class='btn btn-primary') View Assigned
+              .stat-label papers awaiting review
+              a(href='/papers?view=reviewer', class='btn btn-primary') Review Papers
 
             .dashboard-card
               h3
-                i.fas.fa-star
-                |  Submitted Reviews
-              .stat-value#submittedReviewCount 0
-              .stat-label reviews completed
-              a(href='/papers?view=assigned', class='btn btn-secondary') View Reviews
-
-            .dashboard-card
-              h3
-                i.fas.fa-file-pdf
-                |  Download & Read
-              p Access PDF files to review papers
-              a(href='/papers?view=assigned', class='btn btn-secondary') Read Papers
-
-            .dashboard-card
-              h3
-                i.fas.fa-clock
-                |  Pending Reviews
-              .stat-value#pendingDeadlines 0
-              .stat-label awaiting submission
-              a(href='/papers?view=assigned', class='btn btn-secondary') View
+                i.fas.fa-check-circle
+                |  Completed Reviews
+              .stat-value#completedReviewCount 0
+              .stat-label reviews finished
+              a(href='/papers?view=completed', class='btn btn-secondary') View History
 
         // ==================== EDITOR DASHBOARD ====================
         #editorSection(style='display: none;')
@@ -510,31 +495,15 @@ html(lang='en')
                 |  Total Submissions
               .stat-value#totalPaperCount 0
               .stat-label papers in system
-              a(href='/papers?view=all', class='btn btn-primary') Manage Papers
+              a(href='/papers?view=editor', class='btn btn-primary') View & Download Papers
 
             .dashboard-card
               h3
-                i.fas.fa-tasks
-                |  Pending Review
-              .stat-value#pendingCount 0
-              .stat-label awaiting decisions
-              a(href='/papers?view=pending', class='btn btn-secondary') Review
-
-            .dashboard-card
-              h3
-                i.fas.fa-signature
-                |  Decisions Made
-              .stat-value#decisionsCount 0
-              .stat-label finalized decisions
-              a(href='/papers?view=all', class='btn btn-secondary') View All
-
-            .dashboard-card
-              h3
-                i.fas.fa-hourglass-half
-                |  Under Review
-              .stat-value#underReviewCount 0
-              .stat-label papers being reviewed
-              a(href='/papers?view=all', class='btn btn-secondary') Review
+                i.fas.fa-download
+                |  Downloads
+              .stat-value#downloadCount 0
+              .stat-label papers downloaded
+              a(href='/papers?view=editor', class='btn btn-secondary') Download History
 
     // ==================== SUBMIT PAPER MODAL ====================
     #submitModal.modal
@@ -695,36 +664,28 @@ html(lang='en')
       function showReviewerDashboard(papers) {
         document.getElementById('reviewerSection').style.display = 'block';
 
-        // Reviewers can see all papers (per updated requirement) but we count those assigned to them
-        const assignedPapers = papers.filter(p => 
-          p.assignedReviewers && p.assignedReviewers.some(r => String((r._id || r)) === String(currentUser._id))
+        // Count papers that can be reviewed (SUBMITTED or UNDER_REVIEW status)
+        const reviewablePapers = papers.filter(p => 
+          ['SUBMITTED', 'UNDER_REVIEW'].includes(p.status)
         );
-        document.getElementById('reviewCount').textContent = assignedPapers.length;
+        document.getElementById('reviewCount').textContent = reviewablePapers.length;
 
-        // Count submitted reviews (placeholder - would need actual review count)
-        document.getElementById('submittedReviewCount').textContent = '0';
-
-        // Count pending (Under Review status)
-        const pending = assignedPapers.filter(p => p.status === 'UNDER_REVIEW');
-        document.getElementById('pendingDeadlines').textContent = pending.length;
+        // Count completed reviews (ACCEPTED or REJECTED status)
+        const completedReviews = papers.filter(p => 
+          ['ACCEPTED', 'REJECTED'].includes(p.status)
+        );
+        document.getElementById('completedReviewCount').textContent = completedReviews.length;
       }
 
       // Editor Dashboard
       function showEditorDashboard(papers) {
         document.getElementById('editorSection').style.display = 'block';
 
+        // Total papers editor can access
         document.getElementById('totalPaperCount').textContent = papers.length;
 
-        const pendingPapers = papers.filter(p => p.status === 'SUBMITTED');
-        document.getElementById('pendingCount').textContent = pendingPapers.length;
-
-        const underReview = papers.filter(p => p.status === 'UNDER_REVIEW');
-        document.getElementById('underReviewCount').textContent = underReview.length;
-
-        const decided = papers.filter(p => 
-          p.status === 'ACCEPTED' || p.status === 'REJECTED' || p.status === 'REVISION_REQUESTED'
-        );
-        document.getElementById('decisionsCount').textContent = decided.length;
+        // Download count (placeholder - would be tracked separately)
+        document.getElementById('downloadCount').textContent = '0';
       }
 
       // Submit paper form
